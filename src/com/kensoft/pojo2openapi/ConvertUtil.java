@@ -118,7 +118,13 @@ public class ConvertUtil {
 		String formatTemplate = "        format: \"$1\"\r\n";
 		String refTemplate = "        $ref: \"#/$0/$1\"\r\n".replace("$0", definitionRoot);
 		String descTemplate = "        description: \"$1\"\r\n";
+		String arrayTemplate = 
+			"        items:\r\n" +
+			"          type: $1\r\n";
 		
+		if("photoKeys".equals(f.getName())) {
+			System.out.println("hi");
+		}
 		//conditional check for various native data types from Java and their Object counterparts
 		Class typeClass = f.getType();
 		String typeName = typeClass.getSimpleName();
@@ -161,17 +167,18 @@ public class ConvertUtil {
 			//secondary processing for parameterised List type to reference another POJO class
 			String typeStr = f.getGenericType().toString();
 			if(typeStr.contains("<") && typeStr.contains(">")) {
-				typeStr = typeStr.substring(typeStr.lastIndexOf(".")+1, typeStr.length()-1);
+				String paramType = typeStr.substring(typeStr.indexOf("<")+1, typeStr.indexOf(">")-1);
+				boolean isNative = paramType.startsWith("java.lang.");
+				typeStr = paramType.substring(paramType.lastIndexOf(".")+1, paramType.length());
 //				System.out.println("typeStr: " + typeStr);
-				result = refTemplate.replace("$1", typeStr);
+				if(isNative) {
+					result += arrayTemplate.replace("$1", getDataTypeMapping(paramType));
+				} else {
+					result += refTemplate.replace("$1", typeStr);
+				}
 			}
 		} else {
 			result = refTemplate.replace("$1", typeName);
-		}
-		
-		if("Nr2Registration".equals(typeName)) {
-			System.out.println("hi");
-			f.getAnnotation(YamlDescription.class);
 		}
 		
 		Annotation[] annArr = f.getAnnotations();
@@ -186,6 +193,25 @@ public class ConvertUtil {
 			if(a instanceof YamlRequired) {
 				requiredFieldList.add(f.getName());
 			}
+		}
+		
+		return result;
+	}
+	
+	private String getDataTypeMapping(String typeName) {
+		String result = "string";
+		if("short".equalsIgnoreCase(typeName)) {
+			result = "number";
+		} else if("int".equals(typeName) || "Integer".equals(typeName)) {
+			result = "integer";
+		} else if("long".equalsIgnoreCase(typeName)) {
+			result = "integer";
+		} else if("float".equalsIgnoreCase(typeName)) {
+			result = "number";
+		} else if("double".equalsIgnoreCase(typeName)) {
+			result = "number";
+		} else if("boolean".equalsIgnoreCase(typeName)) {
+			result = "boolean";
 		}
 		
 		return result;

@@ -121,6 +121,7 @@ public class ConvertUtil {
 		String arrayTemplate = 
 			"        items:\r\n" +
 			"          type: $1\r\n";
+		String arrayRefTemplate = "        items:\r\n  " + refTemplate;
 		
 		if("photoKeys".equals(f.getName())) {
 			System.out.println("hi");
@@ -152,12 +153,15 @@ public class ConvertUtil {
 			result = typeTemplate.replace("$1", "boolean");
 		} else if("char".equals(typeName) || "Character".equals(typeName)) {
 			result = typeTemplate.replace("$1", "string");
-		} else if("Date".equalsIgnoreCase(typeName)) {
+		} else if("Date".equalsIgnoreCase(typeName) || "Timestamp".equalsIgnoreCase(typeName)) {
 			//default to using "date-time" to be more inclusive
 			result = typeTemplate.replace("$1", "string");
 			result += formatTemplate.replace("$1", "date-time");
 		} else if("String".equals(typeName)) {
 			result = typeTemplate.replace("$1", "string");
+		} else if("BitSet".equals(typeName)) {
+			result = typeTemplate.replace("$1", "array");
+			result += arrayTemplate.replace("$1", "number");
 		} else if("List".equalsIgnoreCase(typeName) || typeName.contains("List")) {
 			//more processing for List object types, not checking for Collections currently 
 			
@@ -167,14 +171,14 @@ public class ConvertUtil {
 			//secondary processing for parameterised List type to reference another POJO class
 			String typeStr = f.getGenericType().toString();
 			if(typeStr.contains("<") && typeStr.contains(">")) {
-				String paramType = typeStr.substring(typeStr.indexOf("<")+1, typeStr.indexOf(">")-1);
+				String paramType = typeStr.substring(typeStr.indexOf("<")+1, typeStr.indexOf(">"));
 				boolean isNative = paramType.startsWith("java.lang.");
 				typeStr = paramType.substring(paramType.lastIndexOf(".")+1, paramType.length());
 //				System.out.println("typeStr: " + typeStr);
 				if(isNative) {
 					result += arrayTemplate.replace("$1", getDataTypeMapping(paramType));
 				} else {
-					result += refTemplate.replace("$1", typeStr);
+					result += arrayRefTemplate.replace("$1", typeStr);
 				}
 			}
 		} else {
